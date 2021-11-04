@@ -1,0 +1,13 @@
+{
+  "title": "InspiringGroup - Codelab",
+  "description": "Hello",
+  "tags": [],
+  "categories": [],
+  "exclude": [
+    "^lang-.*"
+  ],
+  "logoUrl": "/images/logo.png",
+  "toolbarBgColor": "#37474F",
+  "sort": "mainCategory",
+  "pins": []
+}

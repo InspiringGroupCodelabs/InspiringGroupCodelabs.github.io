@@ -1,0 +1,10 @@
+{
+  "title": "Cryptography",
+  "description": "Come learn about Cryptography by completing codelabs and coding challenges! These challenges cover a range of topics such as Homomorphic encryption, .",
+  "logoUrl": "/cryptography/logo.png",
+  "tags": ["cryptography"],
+  "exclude": [
+    ".*-about$",
+    "^lang-.*"
+  ]
+}
