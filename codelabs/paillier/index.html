@@ -1,0 +1,104 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Paillier Example</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="paillier"
+                  title="Paillier Example"
+                  environment="web"
+                  feedback-link="https://github.com/1286482110/InspiringGroup-Codelab/issues">
+    
+      <google-codelab-step label="同态密码" duration="0">
+        <p> 同态，通俗理解就是运算方可以在不知道运算数明文的情况下对密文进行某种计算，使得计算的结果仍为合法的密文，且解密后恰好等于原两明文的某种计算的结果。  假设加密算法为 $E(x)$，其中 $x$ 为明文，则同态密码系统可以表示为符合以下性质：  $$  E(x) \oplus E(y) = E(x \circ y) $$  其中，$x, y$ 为明文， $\oplus$ 是密文上的某种运算，$\circ$ 是明文上的某种运算，通常为算数或逻辑的 <em>加法或乘法</em> 。  当一个同态密码系统同时支持明文上的加法和乘法，即以下二式成立：  $$ \begin{aligned} </p>
+<pre><code>E(x) \oplus E(y) = &amp; E(x + y) \\
+E(x) \otimes E(y) = &amp; E(xy)
+</code></pre>
+<p>\end{aligned} $$   则称该系统为 <strong>全同态密码系统</strong> ，若仅支持加法或乘法中的一个，则称为 <strong>半同态密码系统</strong> 。  </p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Paillier 半同态密码系统" duration="0">
+        <p> Paillier 同态密码系统是由 Pascal Paillier 在 1999 年提出的半同态密码系统。它以密文乘法的形式计算明文上的同态模加法，因此它是一个半同态密码系统。  我们将在接下来的部分中介绍一个简单的 python 版本的 Paillier 密码系统的实现，并在最后证明其正确性。  </p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Paillier 密码系统的简单实现" duration="0">
+        <h2 is-upgraded>数学基础 </h2>
+<p> 首先我们不加解释地实现带模快速幂、拓展欧几里得算法，并提供求模意义下乘法逆元的实现。  &#34;`python   import random   import math    # quick power: calculate (base^exponent)%modulus   def powerMod(base, exponent, modulus): </p>
+<pre><code>answer = 1
+while exponent &gt; 0:
+  if exponent % 2 == 1: answer = (answer * base) % modulus
+  base = (base**2) % modulus
+  exponent //= 2
+return answer
+</code></pre>
+<p>   # exgcd: return (x, y, gcd(a, b)) where ax + by = gcd(a,b)   def exgcd(a, b): </p>
+<pre><code>if b == 0: return 1, 0, a
+else:
+  x0, y0, g = exgcd(b, a%b)
+  return y0, x0 - (a//b)*y0, g
+</code></pre>
+<p>   # inv: return x, where ax = 1 (mod m)   def inv(a, m) -&gt; int: </p>
+<pre><code>  x, y, g = exgcd(a, m)
+  return (x%m+m)%m
+</code></pre>
+<p><code><br><br>由于密钥生成算法需要使用大质数，为了简单起见，我们使用埃拉托色尼筛法。</code><br><br>python   def sieve(upperbound = 0x4000): </p>
+<pre><code>primes = []
+flags = [True] * upperbound
+for each in range(2, upperbound):
+  if not flags[each]: continue
+  for multiplier in range(2, upperbound // each):
+    flags[multiplier * each] = False
+  primes.append(each)
+return primes
+</code></pre>
+<p>   primes = sieve(0x4000) &#34;`  </p>
+<p>在实际应用中，为了快速找出足够大的质数，通常使用 Miller Rabin 素性检测的方法。该算法本质是随机生成一个数字，若它通过简单的几步检测，即可以较高的概率认为它是一个质数。  </p>
+<h2 is-upgraded>密钥生成 </h2>
+<p> Paillier 密码系统的密钥生成步骤如下：  </p>
+<ol type="1">
+<li>选取两个随机大素数 $p, q$ ，计算 $n=pq, \lambda=\text{lcm}(p-1, q-1)$ ； </li>
+<li>选取 $g &lt; n^2$ ，使得 $g$ 与 $n$ 互质，且模 $n$ 意义下的乘法逆元  $$ \mu \cdot L(g^\lambda \text{ mod } n^2) \equiv 1 \pmod {n} $$  存在，其中 $L(x) = (x-1)/n$ ；  </li>
+<li>公钥为 $(n, g)$ ，私钥为 $(\lambda, \mu)$ 。  从实现的角度而言，因为 $g$ 是公钥，所以不必选取 $g$ 为随机数，例如可以直接选取 $g = n+1$ 。我们也将在之后的证明中看到，如此选取的 $g$ 能够保证 $L(g^\lambda \text{ mod } n^2)$ 的确是一个整数。  &#34;`python   produce (n, g, lambda, mu), where (n, g) is the public key, (lambda, mu) is the private key   def generateKeys(): primeCount = len(primes) p = primes[random.randint(primeCount // 2, primeCount)] while True:   q = primes[random.randint(primeCount // 2, primeCount)]   if p != q: break n = p<em>q Lambda = (p-1)</em>(q-1) // math.gcd(p-1, q-1) g = n + 1 mu = inv((powerMod(g, Lambda, n*n)-1)//n, n) return n, g, Lambda, mu &#34;`    <h2 is-upgraded>加密算法 </h2>
+   Paillier 密码系统的加密步骤：对于明文 $m &lt; n$ 随机选取 $0 &lt; r &lt; n$ 使得 $r$ 与 $n$ 互质，则密文为 $c = g^m r^n (\text{mod } n^2)$ 。  实际上，当 $n$ 足够大时，可以直接随机选取 $0 &lt; r &lt; n$ ，因为二者不互质的概率极小。  <code>python<br>def encrypt(m, n, g):<br>while True:<br>  r = random.randint(1, n-1)<br>  if math.gcd(r, n) == 1: break<br>c = powerMod(g, m, n*n) * powerMod(r, n, n*n) % (n*n)<br>return c</code><br>    <h2 is-upgraded>解密算法 </h2>
+   Paillier 密码系统的解密步骤：对于密文 $c$ ，明文为 $m = \mu \cdot L(c^\lambda \text{ mod } n^2) \text{ mod } n$ 。  <code>python<br>def decrypt(c, Lambda, mu, n):<br>k = powerMod(c, Lambda, n*n)<br>assert((k-1)%n == 0) # when (k-1)%n != 0, c is not a valid ciphertext.<br>return (k-1)//n * mu % n</code>  <br>    <h2 is-upgraded>同态加法 </h2>
+   对于密文 $c_1$ , $c_2$ 计算 $c_3 = c_1 \cdot c_2 \text{ mod } n^2$ 则 $c_3$ 是合法的密文，且  $$ D(c_3) = D(c_1) + D(c_2) $$  其中 $D©$ 为解密算法。  <code>python<br>def evalAdd(c1, c2, n):<br>return c1 * c2 % (n*n)</code><br>    <h2 is-upgraded>测试 </h2>
+   有了以上的代码，我们可以测试此实现是否确实满足同态性质。  &#34;`python   generate keys   n, g, Lambda, mu = generateKeys() print(f&#34;Public key:       n = {n:10d},  g = {g:10d}&#34;) print(f&#34;Private key: lambda = {Lambda:10d}, mu = {mu:10d}&#34;)    plaintext   m1 = random.randint(0, n-1) m2 = random.randint(0, n-1)    ciphertext   c1 = encrypt(m1, n, g) c2 = encrypt(m2, n, g) print(f&#34;c1 = Encrypt({m1}) = {c1:18d} = 0x{c1:015x}&#34;) print(f&#34;c2 = Encrypt({m2}) = {c2:18d} = 0x{c2:015x}&#34;)    evaluate addition   c3 = evalAdd(c1, c2, n) print(f&#34;c3 = c1 * c2 = {c3:18d} = 0x{c3:015x}&#34;)    decrypt   d = decrypt(c3, Lambda, mu, n) print(f&#34;Decrypt(c3) = {d} = {m1} + {m2} (mod {n})&#34;) &#34;`    正确性证明     <h2 is-upgraded>加密与解密 </h2>
+   由 $\lambda = \text{lcm}(p-1, q-1)$，可记 $\lambda = k_1(p-1) = k_2(q-1)$。  因 $g$ 不是 $p$ 的倍数，由费马小定理可知 $g^{\lambda} = g^{k_1 (p-1)} \equiv 1 \pmod{p}$；同理 $g^{\lambda} \equiv 1 \pmod{q}$；从而 $g^\lambda \equiv 1 \pmod{n}$，即 $g^\lambda \text{ mod } n^2 \equiv 1 \pmod{n}$。记 $g^\lambda \text{ mod } n^2 = kn + 1$，即 $L(g^\lambda \text{ mod } n^2) = k$。  由二项式定理，$(1 + kn)^m \equiv knm + 1 \pmod{n^2}$，从而 $g^{m\lambda} \equiv (kn+1)^m \equiv knm + 1 \pmod{n^2}$。  同样，因为 $\gcd(r, n) = 1$，则 $r^\lambda \equiv 1$，记为 $r^\lambda = k_r n + 1$，则 $r^{\lambda n} \equiv k_r n^2 + 1 \equiv 1 \pmod {n^2}$。  于是 $L(g^{m\lambda}r^{n\lambda} \text{ mod } n^2) = L(knm + 1) = km$，从而 $\mu L(g^{m\lambda}r^{n\lambda} \text{ mod } n^2) \equiv km / k \equiv m \pmod{n}$。    <h2 is-upgraded>同态加法 </h2>
+   设两密文 $c_1 = g^{m_1}r_1^n \text{ mod } n^2, c_2 = g^{m_2}r_2^n \text{ mod } n^2$，则 $c_3 \equiv c_1c_2  \equiv g^{m_1+m_2} r_1^n r_2^n \pmod{n^2}$。  由以上分析可知 $g^{(m_1+m_2)\lambda} \equiv kn(m_1+m_2) + 1$，而 $r_1^{\lambda n} \equiv r_2^{\lambda n} \equiv 1 \pmod{n^2}$，易得 $\mu L(c_3^\lambda  \text{ mod } n^2) \equiv k(m_1+m_2) / k \equiv m_1 + m_2 \pmod{n}$。即加法同态成立。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
