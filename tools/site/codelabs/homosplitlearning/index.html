@@ -1,0 +1,531 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Homo - SplitLearning</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="homosplitlearning"
+                  title="Homo - SplitLearning"
+                  environment="web"
+                  feedback-link="https://github.com/1286482110/InspiringGroup-Codelab/issues">
+    
+      <google-codelab-step label="Codelab Overview" duration="1">
+        <p>接下来，本文档将以 MNIST 手写数字识别分类任务为例，通过 Pytorch 上的一些简单的代码为你讲解 SplitLearning 架构在横向联邦学习中的训练流程</p>
+<aside class="special"><p>如需完整的代码项目请访问 https://github.com/InspiringGroupCodelabs/SplitLearning</p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="任务背景：横向联邦学习" duration="10">
+        <p>首先，让我们先来回顾一下整个分类任务的背景 —— 横向联邦学习</p>
+<p>如果我们拥有充足的训练数据，那么训练一个神经网络来对手写数字进行预测识别是一件再简单不过的事了，就像下面这张图片一样：</p>
+<p class="image-container"><img alt="homosplitlearning_wholedata" src="img\\57186588427acd72.png"></p>
+<p>你只需要加载 MNIST 数据集，搭建一个简单的神经网络，按照 pipeline 对网络进行训练就可以完成整个训练流程，就像下面这一段简单的代码：</p>
+<pre><code language="language-python" class="language-python">import torch
+from torchvision import datasets, transforms
+from torch import nn, optim
+
+# Define transformations
+transform = transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.5,), (0.5,))])
+
+# Download dataset
+train_set = datasets.MNIST(&#39;../datasets/MNIST/train&#39;, download=True, train=True, transform=transform)
+val_set = datasets.MNIST(&#39;../datasets/MNIST/val&#39;, download=True, train=False, transform=transform)
+
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=64, shuffle=True)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=64, shuffle=True)
+
+# Define models
+input_size = 784
+hidden_sizes = [128, 64]
+output_size = 10
+
+# Build a feed-forward network
+model = nn.Sequential(nn.Linear(input_size, hidden_sizes[0]),
+                      nn.ReLU(),
+                      nn.Linear(hidden_sizes[0], hidden_sizes[1]),
+                      nn.ReLU(),
+                      nn.Linear(hidden_sizes[1], output_size),
+                      nn.LogSoftmax(dim=1))
+
+criterion = nn.NLLLoss()
+optimizer = optim.SGD(model.parameters(), lr=0.003, momentum=0.9)
+
+epochs = 15
+for e in range(epochs):
+	for images, labels in train_loader:
+		# Flatten MNIST images into a 784 long vector
+		images = images.view(images.shape[0], -1)
+		
+		# Clean the gradients
+		optimizer.zero_grad()
+
+		# evaluate full model in one pass. 
+		output = model(images)
+
+		# calculate loss
+		loss = criterion(output, labels)
+
+		#backprop the second model
+		loss.backward()
+		
+		#optimize the weights
+		optimizer.step()
+</code></pre>
+<p>并最终在验证集上达到 0.97 左右的高准确率</p>
+<p>但是，请你思考一个问题，如果我们的训练数据是被多个组织分散持有的，就像下面这张图片一样，那我们应该如何去训练呢？</p>
+<p class="image-container"><img alt="image-20211030215714077" src="img\\aa47a5f734a85a41.png"></p>
+<p>如果每个组织分别使用自己持有的少量数据去训练，由于数据丰度的限制，最终模型的准确率会大打折扣</p>
+<p>你这时可能会想：把各个组织的数据收集到一起，使用全部的数据一起训练不就可以了吗？</p>
+<p>的确，如果各个组织都愿意共享自己持有的数据，那么这确实是最好的解决方案</p>
+<p>可惜，在现实场景中，数据是具有巨大价值、并可能涉及隐私等敏感信息的，很难向其他组织索要数据，或是需要付出昂贵的代价</p>
+<p>所以，我们应该如何在不泄露各组织所持有数据的情况下，联合使用这些数据来训练一个高性能的机器学习模型呢？—— 这，就是所谓的联邦学习</p>
+<p>而横向则是对于特定数据分布场景的描述，就像上面的例子：各组织持有的数据分布在同一特征空间中，且重叠的数据样本较少</p>
+<p class="image-container"><img alt="image-20211031084930222" src="img\\8111f763998c2760.png"></p>
+<p>回顾完分类任务的背景，我们就将进入本文档的核心部分，也就是：SplitLearning 是如何实现横向联邦学习的</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="SplitLearning 的网络架构与训练流程" duration="20">
+        <h2 is-upgraded><strong>1 网络架构</strong></h2>
+<h3 is-upgraded><strong>将整个网络划分为 Top Model 和 Bottom Model 两部分</strong></h3>
+<p>首先，在 SplitLearning 架构中，将原本的整张神经网络拆分为了上下两个部分，我们暂且称他们为 Top Model 和 Bottom Model，并称 Bottom Model 的最后一个 Layer 为 Cut Layer</p>
+<p>整张网络上的 dataflow 就像下面这张图片一样：</p>
+<p class="image-container"><img alt="image-20211031090255055" src="img\\589abd6a77072a45.png"></p>
+<h3 is-upgraded><strong>Top Model 由 Server 管理，Bottom Model 由 Client 管理</strong></h3>
+<p>假设现在有若干个持有数据的组织想要通过联邦学习来共同训练一张神经网络，我们称每个组织为一个 Client，另外设置一个 Server 来帮助联合 Clients 进行训练</p>
+<p>然后，我们把 Top Model 交给 Server 进行管理，把 Bottom Model 交给 Client 管理，每个 Client 都会在本地搭建一个 Bottom Model 用于计算和更新</p>
+<p class="image-container"><img alt="image-20211031091515580" src="img\\c65ee21a4264cf80.png"></p>
+<h2 is-upgraded><strong>2 训练流程</strong></h2>
+<p>Server 和 Client 配置好 Top Model 和 Bottom Model 之后，我们就可以开始训练了</p>
+<p>以 Client A 为例，在一个训练轮次中，计算的流程可以分为以下几个步骤：</p>
+<h3 is-upgraded><strong>Client 使用所持有数据在本地对 Bottom Model 进行前向传播</strong></h3>
+<p class="image-container"><img alt="image-20211031092701605" src="img\\213541d33bfda6ef.png"></p>
+<h3 is-upgraded><strong>Client 将 Bottom Model 最后一个 Layer 的输出向量 以及 对应的 Lable 发送给 Server</strong></h3>
+<p class="image-container"><img alt="image-20211031094149198" src="img\\703dba5437cedb6.png"></p>
+<p>注意，此处将对应的 Lable 发送给 Server 是为了供 Server 后续计算 Loss 使用</p>
+<aside class="warning"><p>如果不希望泄露 Lable，也可以只发送 Bottom Model 最后一个 Layer 的输出向量，待 Server 计算 Loss 时请求 Client 进行计算，再回传给 Server</p>
+</aside>
+<aside class="warning"><p>该结构将于后续安全性分析的 codelab 中详细讨论，此处仅以上述简单结构对 SplitLearning 进行基本讲解</p>
+</aside>
+<h3 is-upgraded><strong>Server 接收到 Bottom Model 输出向量 以及 对应的 Lable 后，对 Top Model 进行前向传播和反向传播</strong></h3>
+<p class="image-container"><img alt="image-20211031094319472" src="img\\ecc0e1d3b0fbecf9.png"></p>
+<h3 is-upgraded><strong>Server 将 Bottom Model 输出向量上的梯度回传给 Client</strong></h3>
+<p class="image-container"><img alt="image-20211031095046500" src="img\\3fb792bcaffc5f77.png"></p>
+<h3 is-upgraded><strong>Client 接收到梯度后对 Bottom Model 进行反向传播</strong></h3>
+<p class="image-container"><img alt="image-20211031095223768" src="img\\f0a1a7d031473bb9.png"></p>
+<h3 is-upgraded><strong>根据各个 Client 持有数据经反向传播后得到的梯度，对 Top Model 和 Bottom Model 进行聚合更新</strong></h3>
+<p>在一个训练轮次中，每个 Client 都像上面的 A 一样，同步进行着上述计算</p>
+<p>计算完成后，每个 Client 的数据都会得到 Top Model 和 Bottom Model 上的一组梯度</p>
+<p>此时需要对这些梯度进行聚合，并使用聚合后的结果更新 Top Model 和 Bottom Model</p>
+<aside class="warning"><p>Bottom Model 是否聚合 / 如何聚合可以基于性能和安全性考虑进一步分析，将于后续 codelab 中详细讨论</p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="SplitLearning 程序样例" duration="40">
+        <p>接下来我们将动手编写程序，在 Pytorch 上使用 SplitLearning 架构完成横向联邦学习场景下的 MNIST 手写数字识别分类任务</p>
+<p>为简化程序逻辑以便于理解，并未模拟 Server 与 Clients 之间的同步通信环境，而是通过各个 Client 依次与 Server 交互完成计算的简单方式实现</p>
+<aside class="special"><p>后续将提供基于 socket 实现同步通信环境的版本</p>
+</aside>
+<h2 is-upgraded><strong>1 定义 Server 类、Client 类及其属性</strong></h2>
+<p>首先，我们需要定义训练过程中的两个参与方 Server 和 Client，并明确其管理的数据与模型等属性</p>
+<h3 is-upgraded><strong>定义 Server 类及其属性</strong></h3>
+<pre><code language="language-python" class="language-python">class Server:
+    # Init Server with client_ids, top_model
+    def __init__(self, client_ids, top_model):
+        self.client_ids = client_ids
+        self.top_model = top_model
+        self.optimizer = optim.SGD(self.top_model.parameters(), lr=0.003, momentum=0.9)
+        self.init_param = self.top_model.state_dict()
+        self.update_cache = {}
+</code></pre>
+<p>其中：</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>属性</p>
+</td><td colspan="1" rowspan="1"><p>描述</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>client_ids</p>
+</td><td colspan="1" rowspan="1"><p>由各个 Client 的 id 构成的列表，用来标识参与任务的 Clients</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>top_model</p>
+</td><td colspan="1" rowspan="1"><p>由 Server 负责 Top Model 的计算与更新</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>optimizer</p>
+</td><td colspan="1" rowspan="1"><p>更新 Top Model 使用的优化器</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>init_param</p>
+</td><td colspan="1" rowspan="1"><p>记录每个训练轮次中，Top Model 的初始参数</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>update_cache</p>
+</td><td colspan="1" rowspan="1"><p>记录每个训练轮次中，各个 Client 数据在 Top Model 上产生的更新，用以后续聚合</p>
+</td></tr>
+</table>
+<h3 is-upgraded><strong>定义 Client 类及其属性</strong></h3>
+<pre><code language="language-python" class="language-python">class Client:
+    # Init Client with client_id, train_set, val_set, bottom_model
+    def __init__(self, client_id, train_set, val_set, bottom_model):
+        self.client_id = client_id
+        self.train_set = train_set
+        self.val_set = val_set
+        self.bottom_model = bottom_model
+        self.optimizer = optim.SGD(self.bottom_model.parameters(), lr=0.003, momentum=0.9)
+</code></pre>
+<p>其中：</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>属性</p>
+</td><td colspan="1" rowspan="1"><p>描述</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>client_id</p>
+</td><td colspan="1" rowspan="1"><p>Client 的 id，用以标识自身</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>train_set</p>
+</td><td colspan="1" rowspan="1"><p>Client 所持有的数据，不离开本地</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>val_set</p>
+</td><td colspan="1" rowspan="1"><p>用于验证模型效果的验证集</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>bottom_model</p>
+</td><td colspan="1" rowspan="1"><p>各个 Client 在本地进行 Bottom Model 的计算与更新</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>optimizer</p>
+</td><td colspan="1" rowspan="1"><p>更新 Top Model 使用的优化器</p>
+</td></tr>
+</table>
+<h2 is-upgraded><strong>2 创建 Server 、Client 实例对象</strong></h2>
+<p>接下来，我们将对训练所需的数据集进行划分，并定义具体的 top_model 和 bottom_model，从而创建参与训练的 Server 和 Client 的实例对象</p>
+<h3 is-upgraded><strong>所需导入的模块如下</strong></h3>
+<pre><code language="language-python" class="language-python">from torchvision import datasets, transforms
+from torch.utils.data import random_split
+from torch import nn, optim
+from split_no_socket.Client import Client, bottom_aggression
+from split_no_socket.Server import Server
+from copy import deepcopy
+</code></pre>
+<h3 is-upgraded><strong>下载 MNIST 数据集，并对数据集进行划分</strong></h3>
+<pre><code language="language-python" class="language-python"># Define transformations
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+# Download dataset
+train_set = datasets.MNIST(&#39;../datasets/MNIST/train&#39;, download=True, train=True, transform=transform)
+val_set = datasets.MNIST(&#39;../datasets/MNIST/val&#39;, download=True, train=False, transform=transform)
+
+# Split dataset
+train_sets = random_split(train_set, [10000, 10000, 10000, 10000, 10000, 10000])
+</code></pre>
+<p>其中，transform 用于对 MNIST 数据集进行预处理</p>
+<p>最终将 60000 个训练图像随机均匀拆分为 6 份，分别由 6 个 Client 所持有</p>
+<aside class="warning"><p>注意，若使用 datasets.MNIST() 方法下载并读取 MNIST 数据集时报错，可能是因为依赖库的版本问题</p>
+</aside>
+<aside class="warning"><p>作者所采用的 numpy 版本为 1.16.4，pytorch 版本为 1.7.1，torchvision 版本为 0.8.2，以供参考</p>
+</aside>
+<h3 is-upgraded><strong>定义 top_model 、bottom_model</strong></h3>
+<pre><code language="language-python" class="language-python"># Define models
+input_size = 784
+hidden_sizes = [128, 64]
+output_size = 10
+
+bottom_model = nn.Sequential(nn.Linear(input_size, hidden_sizes[0]),
+					nn.ReLU(),
+					nn.Linear(hidden_sizes[0], hidden_sizes[1]))
+
+
+top_model = nn.Sequential(nn.ReLU(),
+					nn.Linear(hidden_sizes[1], output_size),
+					nn.LogSoftmax(dim=1))
+</code></pre>
+<p>将前文中的完整 model 拆分为了 top_model 和 bottom_model 上下两部分</p>
+<h3 is-upgraded><strong>创建 Server 、Client 实例对象</strong></h3>
+<pre><code language="language-python" class="language-python"># Define Clients and Server
+A = Client(&#39;A&#39;, train_sets[0], val_set, deepcopy(bottom_model))
+B = Client(&#39;B&#39;, train_sets[1], val_set, deepcopy(bottom_model))
+C = Client(&#39;C&#39;, train_sets[2], val_set, deepcopy(bottom_model))
+D = Client(&#39;D&#39;, train_sets[3], val_set, deepcopy(bottom_model))
+E = Client(&#39;E&#39;, train_sets[4], val_set, deepcopy(bottom_model))
+F = Client(&#39;F&#39;, train_sets[5], val_set, deepcopy(bottom_model))
+server = Server([&#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;, &#39;F&#39;], top_model)
+</code></pre>
+<p>按照划分后的数据集和模型，创建 6 个 Client 实例对象 和 1 个 Server 实例对象</p>
+<h2 is-upgraded><strong>3 编写 SplitLearning 的训练流程</strong></h2>
+<p>创建完 Server 、Client 实例对象后，我们将开始编写具体的训练程序</p>
+<p>为简化程序逻辑以便于理解，并未模拟 Server 与 Clients 之间的同步通信环境，而是通过各个 Client 依次与 Server 交互完成计算的简单方式实现训练</p>
+<h3 is-upgraded><strong>整体训练流程</strong></h3>
+<pre><code language="language-python" class="language-python"># Train the whole model
+iterations = 15
+for i in range(iterations):
+	# Init setting before an iteration
+	server.init_setting()
+	print(&#34;\nIteration {} start&#34;.format(i))
+
+	# ForwardProp and BackProp by different Clients and Server
+	A.train(server, epochs=1)
+	B.train(server, epochs=1)
+	C.train(server, epochs=1)
+	D.train(server, epochs=1)
+	E.train(server, epochs=1)
+	F.train(server, epochs=1)
+
+	# Aggression for top_model and bottom_model
+	server.top_aggression()
+	bottom_aggression([A, B, C, D, E, F])
+</code></pre>
+<p>接下来，让我们逐步解读每个训练轮次中调用的函数：</p>
+<ul>
+<li>Server 的 <code>init_setting</code> 方法</li>
+</ul>
+<pre><code language="language-python" class="language-python">class Server:
+    # skip other functions
+
+    # Init setting before an iteration
+    def init_setting(self):
+        self.init_param = self.top_model.state_dict()
+        self.update_cache = {}
+</code></pre>
+<p>每个训练轮次中，Server 首先要记录该轮次开始时 top_model 的参数</p>
+<p>对于每个 Client，Server 均以上述参数作为 top_model 的初始参数，并缓存每个 Client 对 top_model 参数的更新，最终对所有 Client 所得的更新进行聚合，使用聚合的结果作为本训练轮次对 top_model 参数的更新</p>
+<ul>
+<li>Client 的 <code>train</code> 方法</li>
+</ul>
+<p>在一个训练轮次中，每个 Client 的计算流程如下：</p>
+<p>将本地训练数据代入 bottom_model 进行前向传播得到中间输出向量 output</p>
+<pre><code language="language-python" class="language-python">class Client:
+    # skip other functions
+    
+    # Use this Client&#39;s data to train the whole model in a iteration
+    def train(self, Server, epochs):
+        # Load this Client&#39;s data for train
+        train_loader = torch.utils.data.DataLoader(self.train_set, batch_size=64, shuffle=True)
+
+        for epoch in range(epochs):
+            for images, labels in train_loader:
+                # Flatten MNIST images into a 784 long vector
+                images = images.view(images.shape[0], -1)
+
+                # Cleaning gradients
+                self.optimizer.zero_grad()
+
+                # ForwardProp of bottom_model
+                output = self.bottom_model(images)
+</code></pre>
+<p>Client 把中间输出向量和对应的 Label 发送给 Server 进行 top_model 的前向传播与反向传播，并等待 Server 回传 bottom_model 反向传播所需的梯度</p>
+<pre><code language="language-python" class="language-python">				# Prepare vector for Server
+                vector2Server = Variable(output.data, requires_grad=True)
+
+                # Get gradient from Server
+                gradient2Client, loss = Server.top_calculation(vector2Server, labels)		
+</code></pre>
+<p>Client 得到 bottom_model 反向传播所需的梯度后，对 bottom_model 进行反向传播</p>
+<pre><code language="language-python" class="language-python">				# BackProp of bottom_model
+                output.backward(gradient2Client)
+
+                # Optimize the weights
+                self.optimizer.step()
+</code></pre>
+<p>该 Client 在本训练轮次中的计算完成后，Server 将其对 top_model 的更新缓存起来，并将 top_model 参数 reset 为本轮次的初始参数</p>
+<pre><code language="language-python" class="language-python">			# Call the Server to record the updated parameters of top_model by this Client&#39;s data
+            Server.record_update(self.client_id)
+</code></pre>
+<ul>
+<li>Server 的 <code>top_calculation</code> 方法</li>
+</ul>
+<pre><code language="language-python" class="language-python">class Server:
+    # skip other functions
+    
+    # Receive vector2Server, labels from Client
+    # Do ForwardProp, BackProp for top_model
+    # Return gradient to Client
+    def top_calculation(self, vector2Server, labels):
+        # Cleaning gradients
+        self.optimizer.zero_grad()
+
+        # ForwardProp of top_model
+        output = self.top_model(vector2Server)
+
+        # Calculate losses
+        criterion = nn.NLLLoss()
+        loss = criterion(output, labels)
+
+        # BackProp of top_model
+        loss.backward()
+
+        # Optimize weights
+        self.optimizer.step()
+
+        # Return gradient to Client
+        return vector2Server.grad, loss.item()
+</code></pre>
+<p>Server 得到中间输出向量和对应的 Label 后，进行 top_model 的前向传播与反向传播，并回传 bottom_model 反向传播所需的梯度给 Client</p>
+<ul>
+<li>Server 的 <code>record_update</code> 方法</li>
+</ul>
+<pre><code language="language-python" class="language-python">class Server:
+    # skip other functions
+    
+    # Record the updated parameters of top_model by this Client&#39;s data
+    # Reset top_model to the init parameter of this iteration(for next Client to train)
+    def record_update(self, client_id):
+        # Record the updated parameter of top_model by this Client&#39;s data
+        updated_param = self.top_model.state_dict()
+        if client_id in self.update_cache.keys():
+            print(&#39;Duplicate training on a Client in this iteration!&#39;)
+            exit(-1)
+        else:
+            self.update_cache[client_id] = updated_param
+
+        # Reset top_model to the init parameter of this iteration(for next Client to train)
+        self.top_model.load_state_dict(self.init_param)
+</code></pre>
+<p>Server 将 Client 对 top_model 的更新缓存起来，用于后续 top_model 的聚合更新</p>
+<p>并将 top_model 参数 reset 为本轮次的初始参数，保证其他 Client 计算时 top_model 为初始参数</p>
+<ul>
+<li>Server 的 <code>top_aggression</code> 方法</li>
+</ul>
+<pre><code language="language-python" class="language-python">class Server:
+    # skip other functions
+    
+    # Aggression for top_model
+    def top_aggression(self):
+        num = len(self.client_ids)
+        if num == 0:
+            return
+
+        # Calculate the mean of Clients&#39;s updated parameters for top_model
+        model_dict = self.update_cache[self.client_ids[0]]
+
+        for i in range(1, num):
+            client_id = self.client_ids[i]
+            client_dict = self.update_cache[client_id]
+            for weights in model_dict.keys():
+                model_dict[weights] = model_dict[weights] + client_dict[weights]
+        for weights in model_dict.keys():
+            model_dict[weights] = model_dict[weights] / num
+
+        # Use load_state_dict() to update the parameter of top_model
+        self.top_model.load_state_dict(model_dict)
+</code></pre>
+<p>Server 将各个 Client 对 top_model 的更新求平均</p>
+<p>将 top_model 的参数更新为平均结果</p>
+<aside class="warning"><p>此处使用最简单的聚合方法，没有进一步考虑聚合的性能，以便于理解学习</p>
+</aside>
+<aside class="warning"><p>后续 codelab 中会进一步讨论聚合的相关方法</p>
+</aside>
+<ul>
+<li><code>bottom_aggression</code> 方法</li>
+</ul>
+<pre><code language="language-python" class="language-python"># Aggression for Clients&#39;s bottom_model(Not Secure)
+def bottom_aggression(clients):
+    num = len(clients)
+    if num == 0:
+        return
+
+    # Use state_dict() to get the parameter of Clients&#39;s bottom_model
+    # Calculate the mean of these parameters
+    model_dict = clients[0].bottom_model.state_dict()
+    for i in range(1, num):
+        client = clients[i]
+        client_dict = client.bottom_model.state_dict()
+        for weights in model_dict.keys():
+            model_dict[weights] = model_dict[weights] + client_dict[weights]
+    for weights in model_dict.keys():
+        model_dict[weights] = model_dict[weights] / num
+
+    # Use load_state_dict() to update the parameter of Clients&#39;s bottom_model
+    for client in clients:
+        client.bottom_model.load_state_dict(model_dict)
+</code></pre>
+<p>对各个 Client 的 bottom_model 参数求平均</p>
+<p>并将各个 Client 的 bottom_model 参数更新为平均结果</p>
+<aside class="warning"><p>此处使用最简单的聚合方法，没有进一步考虑聚合的性能和安全性，以便于理解学习</p>
+</aside>
+<aside class="warning"><p>后续 codelab 中会进一步讨论聚合的相关方法</p>
+</aside>
+<h2 is-upgraded><strong>4 SplitLearning 的性能评估</strong></h2>
+<p>使用 Client 的 <code>val</code> 方法将 bottom_model 和 top_model 拼接起来，并在验证机上测试整个模型的分类性能：</p>
+<pre><code language="language-python" class="language-python"># Validate the accuracy
+A.val(server.top_model)
+</code></pre>
+<ul>
+<li>Client 的 <code>val</code> 方法</li>
+</ul>
+<pre><code language="language-python" class="language-python">class Client:
+    # skip other functions
+     
+    def val(self, top_model):
+        # Load the data for val
+        val_loader = torch.utils.data.DataLoader(self.val_set, batch_size=64, shuffle=True)
+
+        correct_count, all_count = 0, 0
+        for images, labels in val_loader:
+            for i in range(len(labels)):
+                # Flatten MNIST images into a 784 long vector
+                img = images[i].view(1, 784)
+
+                with torch.no_grad():
+                    # ForwardProp of bottom_model
+                    output1 = self.bottom_model(img)
+                    y2 = Variable(output1.data, requires_grad=False)
+                    # ForwardProp of top_model
+                    logps = top_model(y2)
+
+                ps = torch.exp(logps)
+                probab = list(ps.numpy()[0])
+                pred_label = probab.index(max(probab))
+                true_label = labels.numpy()[i]
+                if (true_label == pred_label):
+                    correct_count += 1
+                all_count += 1
+
+        print(&#34;\nNumber Of Images Tested =&#34;, all_count)
+        print(&#34;Client {} Model Accuracy =&#34;.format(self.client_id), (correct_count / all_count), &#34;\n&#34;)
+</code></pre>
+<h3 is-upgraded><strong>最终分类性能</strong></h3>
+<table>
+<tr><td colspan="1" rowspan="1"><p>训练方法</p>
+</td><td colspan="1" rowspan="1"><p>分类性能</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>将训练集全部集中到一起直接训练整个网络</p>
+</td><td colspan="1" rowspan="1"><p>0.97</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>将训练集均分至 6 个 Client 的 SplitLearning</p>
+</td><td colspan="1" rowspan="1"><p>0.96</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>使用训练集的 1 / 6 训练整个网络</p>
+</td><td colspan="1" rowspan="1"><p>0.93</p>
+</td></tr>
+</table>
+<p>可见 SplitLearning 能够在保护各个 Client 数据不出本地的前提下，联合训练出性能更好的模型</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

@@ -151,10 +151,30 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           ><a href="/cryptography/" tabindex="-1">
                   <paper-item>Cryptography</paper-item>
                 </a>
+              <a href="/federatedlearning/" tabindex="-1">
+                  <paper-item>FederatedLearning</paper-item>
+                </a>
               
           </paper-listbox>
         </paper-dropdown-menu>
-        </div>
+        <paper-dropdown-menu
+          label="Filter by category"
+          class="dropdown-filter"
+          no-label-float
+          noink no-animations
+        >
+          <paper-listbox
+            id="categorylist"
+            slot="dropdown-content"
+            class="dropdown-content"
+            on-iron-activate="onCategoryActivate"
+            attr-for-selected="filter"
+          >
+              <paper-item filter="cryptography">cryptography</paper-item>
+                <paper-item filter="federatedlearning">federatedlearning</paper-item>
+                
+          </paper-listbox>
+        </paper-dropdown-menu></div>
 
       <card-sorter id="cards" class="site-width">
         
@@ -182,23 +202,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           
           
             
-            <a href="/codelabs\sample\index.html?index=..%2F..index" on-tap="navigate"
-               class="codelab-card category-cryptography"
-               data-category="cryptography"
-               data-title="Sample"
-               data-duration="0"
-               data-updated="2021-11-04T12:36:42+08:00"
-               data-tags="cryptography"
+            <a href="/codelabs\homosplitlearning\index.html?index=..%2F..index" on-tap="navigate"
+               class="codelab-card category-federatedlearning"
+               data-category="federatedlearning"
+               data-title="Homo - SplitLearning"
+               data-duration="71"
+               data-updated="2021-11-06T17:43:24+08:00"
+               data-tags="federatedlearning,splitlearning"
                data-pin="">
-              <div class="description">Sample</div>
+              <div class="description">Homo - SplitLearning</div>
               <div class="card-duration">
-                <span></span>
-                <span>Updated Nov 4, 2021</span>
+                <span>71 min </span>
+                <span>Updated Nov 6, 2021</span>
               </div>
-			  <div class="summary">This is a long long long long long long long long long long long long long long long long long long long long long long long long summary.</div>
+			  <div class="summary">Simple SplitLearning code to do homogeneous federated learning on MNIST.</div>
               <div class="card-footer">
-                <div class="category-icon cryptography-icon"></div>
-                <paper-button class="cryptography-bg">Start</paper-button>
+                <div class="category-icon federatedlearning-icon"></div>
+                <paper-button class="federatedlearning-bg">Start</paper-button>
               </div>
             </a>
           

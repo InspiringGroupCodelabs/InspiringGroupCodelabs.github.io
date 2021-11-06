@@ -1,0 +1,10 @@
+{
+  "title": "FederatedLearning",
+  "description": "Come learn about FederatedLearning by completing codelabs and coding challenges! These challenges cover a range of topics such as SplitLearning, .",
+  "logoUrl": "/federatedlearning/logo.png",
+  "tags": ["federatedlearning"],
+  "exclude": [
+    ".*-about$",
+    "^lang-.*"
+  ]
+}
