@@ -3,9 +3,9 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2021-11-04T12:34:38+08:00",
-  "id": "paillier",
-  "duration": 0,
+  "updated": "2021-11-06T19:54:00+08:00",
+  "id": "paillier-example",
+  "duration": 4,
   "title": "Paillier Example",
   "authors": "Liu Xuanqi",
   "summary": "A simple implementation of Paillier cryptosystem.",
@@ -21,5 +21,5 @@
     "cryptography"
   ],
   "feedback": "https://github.com/1286482110/InspiringGroup-Codelab/issues",
-  "url": "paillier"
+  "url": "paillier-example"
 }
