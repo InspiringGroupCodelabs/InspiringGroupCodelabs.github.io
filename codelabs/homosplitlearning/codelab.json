@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-06T17:43:24+08:00",
+  "id": "homosplitlearning",
+  "duration": 71,
+  "title": "Homo - SplitLearning",
+  "summary": "Simple SplitLearning code to do homogeneous federated learning on MNIST.",
+  "source": "homosplitlearning.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "federatedlearning"
+  ],
+  "tags": [
+    "federatedlearning",
+    "splitlearning"
+  ],
+  "feedback": "https://github.com/1286482110/InspiringGroup-Codelab/issues",
+  "url": "homosplitlearning"
+}
