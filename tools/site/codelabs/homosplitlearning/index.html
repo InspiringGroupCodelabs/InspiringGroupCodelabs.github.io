@@ -144,14 +144,18 @@ for e in range(epochs):
 
       </google-codelab-step>
     
-      <google-codelab-step label="SplitLearning 程序样例" duration="40">
+      <google-codelab-step label="SplitLearning 程序样例" duration="1">
         <p>接下来我们将动手编写程序，在 Pytorch 上使用 SplitLearning 架构完成横向联邦学习场景下的 MNIST 手写数字识别分类任务</p>
 <p>为简化程序逻辑以便于理解，并未模拟 Server 与 Clients 之间的同步通信环境，而是通过各个 Client 依次与 Server 交互完成计算的简单方式实现</p>
 <aside class="special"><p>后续将提供基于 socket 实现同步通信环境的版本</p>
 </aside>
-<h2 is-upgraded><strong>1 定义 Server 类、Client 类及其属性</strong></h2>
-<p>首先，我们需要定义训练过程中的两个参与方 Server 和 Client，并明确其管理的数据与模型等属性</p>
-<h3 is-upgraded><strong>定义 Server 类及其属性</strong></h3>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="定义 Server 类、Client 类及其属性" duration="3">
+        <p>首先，我们需要定义训练过程中的两个参与方 Server 和 Client，并明确其管理的数据与模型等属性</p>
+<h2 is-upgraded><strong>定义 Server 类及其属性</strong></h2>
 <pre><code language="language-python" class="language-python">class Server:
     # Init Server with client_ids, top_model
     def __init__(self, client_ids, top_model):
@@ -182,7 +186,7 @@ for e in range(epochs):
 </td><td colspan="1" rowspan="1"><p>记录每个训练轮次中，各个 Client 数据在 Top Model 上产生的更新，用以后续聚合</p>
 </td></tr>
 </table>
-<h3 is-upgraded><strong>定义 Client 类及其属性</strong></h3>
+<h2 is-upgraded><strong>定义 Client 类及其属性</strong></h2>
 <pre><code language="language-python" class="language-python">class Client:
     # Init Client with client_id, train_set, val_set, bottom_model
     def __init__(self, client_id, train_set, val_set, bottom_model):
@@ -213,9 +217,13 @@ for e in range(epochs):
 </td><td colspan="1" rowspan="1"><p>更新 Top Model 使用的优化器</p>
 </td></tr>
 </table>
-<h2 is-upgraded><strong>2 创建 Server 、Client 实例对象</strong></h2>
-<p>接下来，我们将对训练所需的数据集进行划分，并定义具体的 top_model 和 bottom_model，从而创建参与训练的 Server 和 Client 的实例对象</p>
-<h3 is-upgraded><strong>所需导入的模块如下</strong></h3>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="创建 Server 、Client 实例对象" duration="6">
+        <p>接下来，我们将对训练所需的数据集进行划分，并定义具体的 top_model 和 bottom_model，从而创建参与训练的 Server 和 Client 的实例对象</p>
+<h2 is-upgraded><strong>所需导入的模块如下</strong></h2>
 <pre><code language="language-python" class="language-python">from torchvision import datasets, transforms
 from torch.utils.data import random_split
 from torch import nn, optim
@@ -223,7 +231,7 @@ from split_no_socket.Client import Client, bottom_aggression
 from split_no_socket.Server import Server
 from copy import deepcopy
 </code></pre>
-<h3 is-upgraded><strong>下载 MNIST 数据集，并对数据集进行划分</strong></h3>
+<h2 is-upgraded><strong>下载 MNIST 数据集，并对数据集进行划分</strong></h2>
 <pre><code language="language-python" class="language-python"># Define transformations
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
 
@@ -240,7 +248,7 @@ train_sets = random_split(train_set, [10000, 10000, 10000, 10000, 10000, 10000])
 </aside>
 <aside class="warning"><p>作者所采用的 numpy 版本为 1.16.4，pytorch 版本为 1.7.1，torchvision 版本为 0.8.2，以供参考</p>
 </aside>
-<h3 is-upgraded><strong>定义 top_model 、bottom_model</strong></h3>
+<h2 is-upgraded><strong>定义 top_model 、bottom_model</strong></h2>
 <pre><code language="language-python" class="language-python"># Define models
 input_size = 784
 hidden_sizes = [128, 64]
@@ -256,7 +264,7 @@ top_model = nn.Sequential(nn.ReLU(),
 					nn.LogSoftmax(dim=1))
 </code></pre>
 <p>将前文中的完整 model 拆分为了 top_model 和 bottom_model 上下两部分</p>
-<h3 is-upgraded><strong>创建 Server 、Client 实例对象</strong></h3>
+<h2 is-upgraded><strong>创建 Server 、Client 实例对象</strong></h2>
 <pre><code language="language-python" class="language-python"># Define Clients and Server
 A = Client(&#39;A&#39;, train_sets[0], val_set, deepcopy(bottom_model))
 B = Client(&#39;B&#39;, train_sets[1], val_set, deepcopy(bottom_model))
@@ -267,10 +275,14 @@ F = Client(&#39;F&#39;, train_sets[5], val_set, deepcopy(bottom_model))
 server = Server([&#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;, &#39;F&#39;], top_model)
 </code></pre>
 <p>按照划分后的数据集和模型，创建 6 个 Client 实例对象 和 1 个 Server 实例对象</p>
-<h2 is-upgraded><strong>3 编写 SplitLearning 的训练流程</strong></h2>
-<p>创建完 Server 、Client 实例对象后，我们将开始编写具体的训练程序</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="编写 SplitLearning 的训练流程" duration="25">
+        <p>创建完 Server 、Client 实例对象后，我们将开始编写具体的训练程序</p>
 <p>为简化程序逻辑以便于理解，并未模拟 Server 与 Clients 之间的同步通信环境，而是通过各个 Client 依次与 Server 交互完成计算的简单方式实现训练</p>
-<h3 is-upgraded><strong>整体训练流程</strong></h3>
+<h2 is-upgraded><strong>整体训练流程</strong></h2>
 <pre><code language="language-python" class="language-python"># Train the whole model
 iterations = 15
 for i in range(iterations):
@@ -460,8 +472,12 @@ def bottom_aggression(clients):
 </aside>
 <aside class="warning"><p>后续 codelab 中会进一步讨论聚合的相关方法</p>
 </aside>
-<h2 is-upgraded><strong>4 SplitLearning 的性能评估</strong></h2>
-<p>使用 Client 的 <code>val</code> 方法将 bottom_model 和 top_model 拼接起来，并在验证机上测试整个模型的分类性能：</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="SplitLearning 的性能评估" duration="5">
+        <p>使用 Client 的 <code>val</code> 方法将 bottom_model 和 top_model 拼接起来，并在验证机上测试整个模型的分类性能：</p>
 <pre><code language="language-python" class="language-python"># Validate the accuracy
 A.val(server.top_model)
 </code></pre>
@@ -499,7 +515,7 @@ A.val(server.top_model)
         print(&#34;\nNumber Of Images Tested =&#34;, all_count)
         print(&#34;Client {} Model Accuracy =&#34;.format(self.client_id), (correct_count / all_count), &#34;\n&#34;)
 </code></pre>
-<h3 is-upgraded><strong>最终分类性能</strong></h3>
+<h2 is-upgraded><strong>最终分类性能</strong></h2>
 <table>
 <tr><td colspan="1" rowspan="1"><p>训练方法</p>
 </td><td colspan="1" rowspan="1"><p>分类性能</p>
