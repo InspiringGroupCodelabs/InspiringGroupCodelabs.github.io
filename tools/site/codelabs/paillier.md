@@ -4,7 +4,7 @@ categories:   appliedcryptography
 tags:   appliedcryptography
 status: Published
 authors:   Liu Xuanqi
-Feedback Link:   https://github.com/1286482110/InspiringGroup-Codelab/issues
+Feedback Link:   https://github.com/InspiringGroupCodelabs/InspiringGroupCodelabs.github.io/issues
 
 # Paillier Example
 
