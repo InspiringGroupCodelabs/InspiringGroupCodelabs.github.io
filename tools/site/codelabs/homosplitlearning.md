@@ -439,7 +439,7 @@ class Client:
 Client 把中间输出向量和对应的 Label 发送给 Server 进行 top_model 的前向传播与反向传播，并等待 Server 回传 bottom_model 反向传播所需的梯度
 
 ```python
-				# Prepare vector for Server
+                # Prepare vector for Server
                 vector2Server = Variable(output.data, requires_grad=True)
 
                 # Get gradient from Server
@@ -449,7 +449,7 @@ Client 把中间输出向量和对应的 Label 发送给 Server 进行 top_model
 Client 得到 bottom_model 反向传播所需的梯度后，对 bottom_model 进行反向传播
 
 ```python
-				# BackProp of bottom_model
+                # BackProp of bottom_model
                 output.backward(gradient2Client)
 
                 # Optimize the weights
@@ -459,7 +459,7 @@ Client 得到 bottom_model 反向传播所需的梯度后，对 bottom_model 进
 该 Client 在本训练轮次中的计算完成后，Server 将其对 top_model 的更新缓存起来，并将 top_model 参数 reset 为本轮次的初始参数
 
 ```python
-			# Call the Server to record the updated parameters of top_model by this Client's data
+            # Call the Server to record the updated parameters of top_model by this Client's data
             Server.record_update(self.client_id)
 ```
 
