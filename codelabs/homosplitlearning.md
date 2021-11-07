@@ -4,7 +4,7 @@ id: homosplitlearning
 tags: federatedlearning, splitlearning
 categories: FederatedLearning
 status: Published
-feedback link: https://github.com/1286482110/InspiringGroup-Codelab/issues
+feedback link: https://github.com/InspiringGroupCodelabs/InspiringGroupCodelabs.github.io/issues
 
 # Homo - SplitLearning
 
