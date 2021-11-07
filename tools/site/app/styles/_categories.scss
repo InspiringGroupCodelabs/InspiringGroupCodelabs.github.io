@@ -200,8 +200,8 @@ $color-weave-green, 'weave.svg');
 @include codelab-card(['web'],
   $color-google-blue, 'web.svg');
 
-@include codelab-card(['cryptography'],
- #d81e06, 'cryptography.svg');
+@include codelab-card(['appliedcryptography'],
+ #d81e06, 'appliedcryptography.svg');
  
 @include codelab-card(['federatedlearning'],
  $color-google-blue, 'federatedlearning.svg');

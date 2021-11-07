@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2021-11-06T19:54:00+08:00",
+  "updated": "2021-11-07T11:00:57+08:00",
   "id": "paillier-example",
   "duration": 4,
   "title": "Paillier Example",
@@ -15,10 +15,10 @@
     "published"
   ],
   "category": [
-    "cryptography"
+    "appliedcryptography"
   ],
   "tags": [
-    "cryptography"
+    "appliedcryptography"
   ],
   "feedback": "https://github.com/1286482110/InspiringGroup-Codelab/issues",
   "url": "paillier-example"

@@ -1241,16 +1241,16 @@ ul, li {
   background-image: url("/images/icons/web.svg");
 }
 
-.cryptography-bg {
+.appliedcryptography-bg {
   background-color: #d81e06;
 }
 
-.codelab-card.category-cryptography {
+.codelab-card.category-appliedcryptography {
   border-bottom-color: #d81e06;
 }
 
-.cryptography-icon {
-  background-image: url("/images/icons/cryptography.svg");
+.appliedcryptography-icon {
+  background-image: url("/images/icons/appliedcryptography.svg");
 }
 
 .about-bg, .ads-bg, .android-wear-bg, .assistant-bg, .docs-bg, .drive-bg, .blockly-bg, .chrome-bg, .google-chrome-bg, .googlechrome-bg, .cloud-bg, .cloud-about-bg, .cloud-general-bg, .cloud-other-bg, .cloud-others-bg, .cloud-platform-bg, .cloud-tools-bg, .cloud-cloud-tools-bg, .cloud-appengine-bg, .cloud-app-engine-bg, .cloud-bigquery-bg, .cloud-big-query-bg, .bigquery-bg, .big-query-bg, .cloud-build-bg, .cloud-compute-bg, .cloud-compute-engine-bg, .cloud-data-bg, .cloud-datalab-bg, .cloud-data-lab-bg, .cloud-iam-bg, .cloud-iot-bg, .cloud-iot-core-bg, .iot-core-bg, .iot-bg, .cloud-key-management-service-bg, .cloud-kms-bg, .cloud-ml-bg, .cloud-machine-learning-bg, .cloud-monitoring-bg, .cloud-monitor-bg, .cloud-networking-bg, .cloud-network-bg, .cloud-security-bg, .cloud-security-command-center-bg, .cloud-sql-bg, .cloud-web-bg, .search-bg, .wear-bg, .wear-os-bg, .web-bg, .federatedlearning-bg {

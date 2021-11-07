@@ -1,7 +1,7 @@
 summary: A simple implementation of Paillier cryptosystem.
 id: paillier-example
-categories:   cryptography
-tags:   cryptography
+categories:   appliedcryptography
+tags:   appliedcryptography
 status: Published
 authors:   Liu Xuanqi
 Feedback Link:   https://github.com/1286482110/InspiringGroup-Codelab/issues

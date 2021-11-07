@@ -1,0 +1,10 @@
+{
+  "title": "Applied Cryptography",
+  "description": "Come learn about Applied Cryptography by completing codelabs and coding challenges! These challenges cover a range of topics such as Homomorphic Encryption, etc.",
+  "logoUrl": "/appliedcryptography/logo.png",
+  "tags": ["appliedcryptography"],
+  "exclude": [
+    ".*-about$",
+    "^lang-.*"
+  ]
+}
