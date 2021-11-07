@@ -197,7 +197,7 @@ Negative
 
 ## SplitLearning 程序样例
 
-Duration: 0:40:00
+Duration: 0:01:00
 
 接下来我们将动手编写程序，在 Pytorch 上使用 SplitLearning 架构完成横向联邦学习场景下的 MNIST 手写数字识别分类任务
 
@@ -208,13 +208,15 @@ Positive
 
 
 
-### **1 定义 Server 类、Client 类及其属性**
+## **定义 Server 类、Client 类及其属性**
+
+Duration: 0:03:00
 
 首先，我们需要定义训练过程中的两个参与方 Server 和 Client，并明确其管理的数据与模型等属性
 
 
 
-#### **定义 Server 类及其属性**
+### **定义 Server 类及其属性**
 
 ```python
 class Server:
@@ -239,7 +241,7 @@ class Server:
 
 
 
-#### **定义 Client 类及其属性**
+### **定义 Client 类及其属性**
 
 ```python
 class Client:
@@ -264,13 +266,15 @@ class Client:
 
 
 
-### **2 创建 Server 、Client 实例对象**
+## **创建 Server 、Client 实例对象**
+
+Duration: 0:06:00
 
 接下来，我们将对训练所需的数据集进行划分，并定义具体的 top_model 和 bottom_model，从而创建参与训练的 Server 和 Client 的实例对象
 
 
 
-#### **所需导入的模块如下**
+### **所需导入的模块如下**
 
 ```python
 from torchvision import datasets, transforms
@@ -283,7 +287,7 @@ from copy import deepcopy
 
 
 
-#### **下载 MNIST 数据集，并对数据集进行划分** 
+### **下载 MNIST 数据集，并对数据集进行划分** 
 
 ```python
 # Define transformations
@@ -309,7 +313,7 @@ Negative
 
 
 
-#### **定义 top_model 、bottom_model**
+### **定义 top_model 、bottom_model**
 
 ```python
 # Define models
@@ -331,7 +335,7 @@ top_model = nn.Sequential(nn.ReLU(),
 
 
 
-#### **创建 Server 、Client 实例对象**
+### **创建 Server 、Client 实例对象**
 
 ```python
 # Define Clients and Server
@@ -348,7 +352,9 @@ server = Server(['A', 'B', 'C', 'D', 'E', 'F'], top_model)
 
 
 
-### **3 编写 SplitLearning 的训练流程**
+## **编写 SplitLearning 的训练流程**
+
+Duration: 0:25:00
 
 创建完 Server 、Client 实例对象后，我们将开始编写具体的训练程序
 
@@ -356,7 +362,7 @@ server = Server(['A', 'B', 'C', 'D', 'E', 'F'], top_model)
 
 
 
-#### **整体训练流程**
+### **整体训练流程**
 
 ```python
 # Train the whole model
@@ -596,7 +602,9 @@ Negative
 
 
 
-### **4 SplitLearning 的性能评估**
+## **SplitLearning 的性能评估**
+
+Duration: 0:05:00
 
 使用 Client 的 `val` 方法将 bottom_model 和 top_model 拼接起来，并在验证机上测试整个模型的分类性能：
 
@@ -642,7 +650,7 @@ class Client:
 
 
 
-#### **最终分类性能**
+### **最终分类性能**
 
 | 训练方法                                    | 分类性能 |
 | ------------------------------------------- | -------- |
