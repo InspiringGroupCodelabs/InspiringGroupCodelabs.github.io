@@ -1265,6 +1265,18 @@ ul, li {
   background-image: url("/images/icons/federatedlearning.svg");
 }
 
+.zeroknowledgeproof-bg {
+  background-color: #3CB371;
+}
+
+.codelab-card.category-zeroknowledgeproof {
+  border-bottom-color: #3CB371;
+}
+
+.zeroknowledgeproof-icon {
+  background-image: url("/images/icons/zeroknowledgeproof.svg");
+}
+
 #cards {
   display: flex;
   flex-wrap: wrap;

@@ -1,0 +1,10 @@
+{
+  "title": "Zero Knowledge Proof",
+  "description": "Come learn about Zero Knowledge Proof by completing codelabs and coding challenges! These challenges cover a range of topics such as Zksnarks, etc.",
+  "logoUrl": "/zeroknowledgeproof/logo.png",
+  "tags": ["zeroknowledgeproof"],
+  "exclude": [
+    ".*-about$",
+    "^lang-.*"
+  ]
+}

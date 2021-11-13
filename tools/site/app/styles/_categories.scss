@@ -205,3 +205,6 @@ $color-weave-green, 'weave.svg');
  
 @include codelab-card(['federatedlearning'],
  $color-google-blue, 'federatedlearning.svg');
+ 
+@include codelab-card(['zeroknowledgeproof'],
+ #3CB371, 'zeroknowledgeproof.svg');
