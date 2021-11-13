@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-13T16:49:01+08:00",
+  "id": "pinocchio-protocol",
+  "duration": 18,
+  "title": "Pinocchio-based zksnarks",
+  "summary": "A demo implimentation of zk-snarks based on Pinocchio protocol",
+  "source": "zksnark.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "zeroknowledgeproof"
+  ],
+  "tags": [
+    "golang",
+    "pinocchio",
+    "zeroknowledgeproof",
+    "zk-snarks"
+  ],
+  "feedback": "https://github.com/InspiringGroupCodelabs/InspiringGroupCodelabs.github.io/issues",
+  "url": "pinocchio-protocol"
+}

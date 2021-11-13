@@ -164,25 +164,3 @@ With the codes above, we can test the correctness of our implementation.
   d = decrypt(c3, Lambda, mu, n)
   print(f"Decrypt(c3) = {d} = {m1} + {m2} (mod {n})")
 ```
-
-<!-- ----------------------- -->
-## Markdown tests
-
-Quotes
-
-> Hello this is some quote
-
-Inline codes
-
-The quick `brown` fox jumps over the lazy dog.
-
-Math expressions
-
-Inline: $(a+b)^2 = a^2 + 2ab + b^2$
-
-Block 
-$$ \begin{aligned} (a+b)^3 & = (a+b)(a^2+2ab+b^2) \\ & = a^3 + 3a^2b + 3ab^2 + b^3 \end{aligned}$$
-
-Raw html
-
-<div style="background-color: cyan">The quick brown fox jumps over a lazy dog.</div>
