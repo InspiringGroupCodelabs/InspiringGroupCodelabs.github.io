@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-01-08T21:45:29+08:00",
+  "id": "bls",
+  "duration": 26,
+  "title": "BLS signature",
+  "summary": "Theoretical principle and simple implementation of BLS signature.",
+  "source": "bls.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "appliedcryptography"
+  ],
+  "tags": [
+    "appliedcryptography"
+  ],
+  "feedback": "https://github.com/InspiringGroupCodelabs/InspiringGroupCodelabs.github.io/issues",
+  "url": "bls"
+}
